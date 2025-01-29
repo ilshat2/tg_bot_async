@@ -1,42 +1,59 @@
-from aiogram import Bot, Dispatcher, types
-from aiogram.utils import executor
-
-# Создаем переменные бота где Bot(token='Токен нашего бота')
-bot = Bot(token='Токен нашего бота')
-
-# Создаем дмспетчер
-dp = Dispatcher(bot)
-
-
-@dp.message_handler()  # Все сообщения
-async def get_message(message: types.Message):
-    # Если в скобках написано (message: types.Message) то в скрипте мы можем использовать message вместо types.Message
-    # Например получим айди пользователя:
-    #chat_id = types.Message.chad.id  # - первый вариант
-    #chat_id = message.chat.id  # второй вариант
-    # При этом функуионал никак не изменился
-
-    # Отправляем сообщение пользователю
-
-    # Вариант 1
-    text = f'Привет {message.from_user.full_name}'
-    await message.answer(text=text)
-
-    print(message.text)
+from aiogram import Bot, Dispatcher
+from aiogram.types import Message
+from aiogram.fsm.storage.memory import MemoryStorage
+from aiogram.filters import Command
+from dotenv import load_dotenv
+import logging
+import asyncio
+import os
 
 
-    # Вариант 2
-    #chat_id = message.chat.id
-    #text = 'Текст которым отвечает бот'
-    #await bot.send_message(chat_id=chat_id, text=text)
+logging.basicConfig(level=logging.INFO)
 
-    # Вариант 3
-    #text = 'Текст ответа для варианта 2'
-    #await message.answer(text=text)
-
-    # Вариант 4 (Ответ текстом который отправил пользователь)
-    #text = message.text
-    #await message.answer(text=text)
+load_dotenv()  # Загружаем переменные из .env
 
 
-executor.start_polling(dp)
+TELEGRAM_TOKEN = os.getenv('MY_TELEGRAM_TOKEN')
+
+# Инициализация бота
+bot = Bot(token=TELEGRAM_TOKEN)
+storage = MemoryStorage()  # Создаем экземпляр хранилища
+
+# Инициализация диспетчера с указанием хранилища
+dp = Dispatcher(storage=storage)  # Передаем через ключевые параметры
+#dp = Dispatcher(bot)
+
+# Создаем роутер
+#router = dp.router
+
+# Инициализация диспетчера с правильной передачей bot через параметр bot
+#dp = Dispatcher()
+
+# Добавляем bot в dispatcher через метод setup
+#dp.include_router(bot)
+
+# Инициализация диспетчера
+#dp = Dispatcher(bot)
+
+
+# Обработчик для команды /start
+@dp.message(Command("start"))
+async def start(message: Message):
+    await message.answer("Привет!")
+
+
+# Обработчик для всех сообщений
+@dp.message()
+async def echo(message: Message):
+    # Здесь текст, который будет отвечать бот
+    await message.answer(f"Ты сказал: {message.text}")
+
+
+async def main():
+    # Запуск бота
+    await dp.start_polling(bot)
+
+
+if __name__ == '__main__':
+    # Запуск асинхронной функции main
+    asyncio.run(main())
